@@ -4,6 +4,7 @@ import os
 import random
 from pathlib import Path
 
+import yaml
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -19,7 +20,6 @@ from dataset import ArtImageDataset
 import numpy as np
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--dataset', default='art', help='cifar10 | lsun | mnist |imagenet | folder | lfw | fake | art')
 parser.add_argument('--dataroot', required=False, default='/Users/m_vys/PycharmProjects/ArtGAN', help='path to dataset')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=1)
 parser.add_argument('--batch_size', type=int, default=64, help='input batch size')
@@ -32,11 +32,11 @@ parser.add_argument('--lr', type=float, default=0.0002, help='learning rate, def
 parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for adam. default=0.5')
 parser.add_argument('--dry-run', action='store_true', help='check a single training cycle works')
 parser.add_argument('--n_gpu', type=int, default=1, help='number of GPUs to use')
-parser.add_argument('--netG', default='./models/netG_epoch_99.pth', help="path to netG (to continue training)")
-parser.add_argument('--netD', default='./models/netD_epoch_99.pth', help="path to netD (to continue training)")
+parser.add_argument('--netG', default='', help="path to netG (to continue training)")
+parser.add_argument('--netD', default='', help="path to netD (to continue training)")
 parser.add_argument('--output_file', default='./models', help='folder to output images and model checkpoints')
 parser.add_argument('--manualSeed', type=int, help='manual seed')
-parser.add_argument('--classes', default='bedroom', help='comma separated list of classes for the lsun data set')
+
 
 class Discriminator(nn.Module):
     def __init__(self, ngpu):
@@ -133,63 +133,12 @@ if __name__ == '__main__':
 
     cudnn.benchmark = True
 
-
-    if opt.dataroot is None and str(opt.dataset).lower() != 'fake':
-        if opt.dataset != 'art':
-            raise ValueError("`dataroot` parameter is required for dataset \"%s\"" % opt.dataset)
-
-    if opt.dataset in ['imagenet', 'folder', 'lfw']:
-        # folder dataset
-        dataset = dset.ImageFolder(root=opt.dataroot,
-                                   transform=transforms.Compose([
-                                       transforms.Resize(opt.imageSize),
-                                       transforms.CenterCrop(opt.imageSize),
-                                       transforms.ToTensor(),
-                                       transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-                                   ]))
-        nc = 3
-    elif opt.dataset == 'lsun':
-        classes = [c + '_train' for c in opt.classes.split(',')]
-        dataset = dset.LSUN(root=opt.dataroot, classes=classes,
-                            transform=transforms.Compose([
-                                transforms.Resize(opt.imageSize),
-                                transforms.CenterCrop(opt.imageSize),
-                                transforms.ToTensor(),
-                                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-                            ]))
-        nc = 3
-    elif opt.dataset == 'cifar10':
-        dataset = dset.CIFAR10(root=opt.dataroot, download=True,
-                               transform=transforms.Compose([
-                                   transforms.Resize(opt.imageSize),
-                                   transforms.ToTensor(),
-                                   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-                               ]))
-        nc = 3
-
-    elif opt.dataset == 'mnist':
-        dataset = dset.MNIST(root=opt.dataroot, download=True,
-                             transform=transforms.Compose([
-                                 transforms.Resize(opt.imageSize),
-                                 transforms.ToTensor(),
-                                 transforms.Normalize((0.5,), (0.5,)),
-                             ]))
-        nc = 1
-
-    elif opt.dataset == 'fake':
-        dataset = dset.FakeData(image_size=(3, opt.imageSize, opt.imageSize),
-                                transform=transforms.ToTensor())
-        nc = 3
-
-    elif opt.dataset == 'art':
-        dataset = ArtImageDataset(f'/{opt.dataroot}/data/augumented_gallery/',
-                                        transform=transforms.Compose([transforms.Resize((opt.image_size, opt.image_size)),
-                                                                      transforms.ToTensor(),
-                                                                      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-                                                                      ]))
-        nc = 3
-
-    assert dataset
+    dataset = ArtImageDataset(f'/{opt.dataroot}/data/augumented_gallery/',
+            transform=transforms.Compose([transforms.Resize((opt.image_size, opt.image_size)),
+                                                              transforms.ToTensor(),
+                                                              transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                                                              ]))
+    nc = 3
 
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batch_size,
                                              shuffle=True)
@@ -200,17 +149,11 @@ if __name__ == '__main__':
     g_depth = int(opt.g_depth)
     d_depth = int(opt.d_depth)
 
-
-# custom weights initialization called on netG and netD
-
     netG = Generator(n_gpu).to(device)
     netG.apply(weights_init)
     if opt.netG != '':
         netG.load_state_dict(torch.load(opt.netG))
     print(netG)
-
-
-
 
     netD = Discriminator(n_gpu).to(device)
     netD.apply(weights_init)
@@ -234,10 +177,26 @@ if __name__ == '__main__':
     model_dir = f'./models/gd_{g_depth}_dd_{d_depth}_lr_{opt.lr}_ls_{latent_size}_bs_{opt.batch_size}_beta_{opt.beta1}/models/'
     img_dir = f'./models/gd_{g_depth}_dd_{d_depth}_lr_{opt.lr}_ls_{latent_size}_bs_{opt.batch_size}_beta_{opt.beta1}/created_imgs/'
     stats_dir = f'./models/gd_{g_depth}_dd_{d_depth}_lr_{opt.lr}_ls_{latent_size}_bs_{opt.batch_size}_beta_{opt.beta1}/stats/'
+    config_dir = f'./models/gd_{g_depth}_dd_{d_depth}_lr_{opt.lr}_ls_{latent_size}_bs_{opt.batch_size}_beta_{opt.beta1}/config/'
 
     Path(model_dir).mkdir(exist_ok=True, parents=True)
     Path(img_dir).mkdir(exist_ok=True, parents=True)
+    Path(stats_dir).mkdir(exist_ok=True, parents=True)
+    Path(config_dir).mkdir(exist_ok=True, parents=True)
 
+    d_config = dict(nc=nc, d_depth=d_depth, optimizer='adam')
+    g_config = dict(nc=nc, g_depth=g_depth, optimizer='adam')
+    d_optim_config = dict(lr=opt.lr, betas=(opt.beta1, 0.999))
+    g_optim_config = dict(lr=opt.lr, betas=(opt.beta1, 0.999))
+    dataset_config = dict(batch_size=opt.batch_size, image_size=opt.image_size,
+                          transforms=['resize', 'normalize', 'to_tensor'])
+
+    config_dict = dict(g_config=g_config, d_config=d_config,
+                  g_optim_config=g_optim_config, d_optim_config=d_optim_config,
+                  dataset_config=dataset_config)
+
+    with open(f'{config_dir}/config.yaml', 'w') as file:
+        yaml.dump(config_dict, file)
     for epoch in range(100, opt.epochs+100):
         d_loss, g_loss, d_of_x, d_of_g_z1, d_of_g_z2 = [], [], [], [], []
         for i, data in enumerate(dataloader, 0):
