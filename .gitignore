@@ -1,0 +1,6 @@
+# created by virtualenv automatically
+data/*
+new_venv/*
+models/
+.idea
+
