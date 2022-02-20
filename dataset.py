@@ -24,7 +24,7 @@ class ArtImageDataset(Dataset):
         #     self.imgs.append(img)
 
     def __len__(self):
-        return len(self.imgs)
+        return len(self.files)
 
     def __getitem__(self, item):
         file = self.files[item]

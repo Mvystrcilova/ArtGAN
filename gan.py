@@ -174,10 +174,10 @@ if __name__ == '__main__':
     if opt.dry_run:
         opt.epochs = 1
 
-    model_dir = f'./models/gd_{g_depth}_dd_{d_depth}_lr_{opt.lr}_ls_{latent_size}_bs_{opt.batch_size}_beta_{opt.beta1}/models/'
-    img_dir = f'./models/gd_{g_depth}_dd_{d_depth}_lr_{opt.lr}_ls_{latent_size}_bs_{opt.batch_size}_beta_{opt.beta1}/created_imgs/'
-    stats_dir = f'./models/gd_{g_depth}_dd_{d_depth}_lr_{opt.lr}_ls_{latent_size}_bs_{opt.batch_size}_beta_{opt.beta1}/stats/'
-    config_dir = f'./models/gd_{g_depth}_dd_{d_depth}_lr_{opt.lr}_ls_{latent_size}_bs_{opt.batch_size}_beta_{opt.beta1}/config/'
+    model_dir = f'./models/is_{opt.image_size}_gd_{g_depth}_dd_{d_depth}_lr_{opt.lr}_ls_{latent_size}_bs_{opt.batch_size}_beta_{opt.beta1}/models/'
+    img_dir = f'./models/is_{opt.image_size}_gd_{g_depth}_dd_{d_depth}_lr_{opt.lr}_ls_{latent_size}_bs_{opt.batch_size}_beta_{opt.beta1}/created_imgs/'
+    stats_dir = f'./models/is_{opt.image_size}_gd_{g_depth}_dd_{d_depth}_lr_{opt.lr}_ls_{latent_size}_bs_{opt.batch_size}_beta_{opt.beta1}/stats/'
+    config_dir = f'./models/is_{opt.image_size}_gd_{g_depth}_dd_{d_depth}_lr_{opt.lr}_ls_{latent_size}_bs_{opt.batch_size}_beta_{opt.beta1}/config/'
 
     Path(model_dir).mkdir(exist_ok=True, parents=True)
     Path(img_dir).mkdir(exist_ok=True, parents=True)
