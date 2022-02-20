@@ -24,7 +24,7 @@ parser.add_argument('--dataroot', required=False, default='/Users/m_vys/PycharmP
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=1)
 parser.add_argument('--batch_size', type=int, default=64, help='input batch size')
 parser.add_argument('--image_size', type=int, default=64, help='the height / width of the input image to network')
-parser.add_argument('--latent_size', type=int, default=100, help='size of the latent z vector')
+parser.add_argument('--latent_size', type=int, default=512, help='size of the latent z vector')
 parser.add_argument('--g_depth', type=int, default=64)
 parser.add_argument('--d_depth', type=int, default=64)
 parser.add_argument('--epochs', type=int, default=10000, help='number of epochs to train for')
@@ -199,7 +199,7 @@ if __name__ == '__main__':
         yaml.dump(config_dict, file)
     for epoch in range(opt.epochs):
         d_loss, g_loss, d_of_x, d_of_g_z1, d_of_g_z2 = [], [], [], [], []
-        for i, data in enumerate(dataloader, 0):
+        for i, data in tqdm(enumerate(dataloader, 0)):
             ############################
             # (1) Update D network: maximize log(D(x)) + log(1 - D(G(z)))
             ###########################
@@ -238,7 +238,7 @@ if __name__ == '__main__':
             optimizerG.step()
 
             print('[%d/%d][%d/%d] Loss_D: %.4f Loss_G: %.4f D(x): %.4f D(G(z)): %.4f / %.4f'
-                  % (epoch, opt.niter, i, len(dataloader),
+                  % (epoch, opt.epochs, i, len(dataloader),
                      errD.item(), errG.item(), D_x, D_G_z1, D_G_z2))
             g_loss.append(errG)
             d_loss.append(errD)
