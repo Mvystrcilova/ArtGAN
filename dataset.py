@@ -14,21 +14,23 @@ class ArtImageDataset(Dataset):
     def __init__(self, img_dir, transform=None):
         self.img_dir = img_dir
         self.transform = transform
-        files = [file for file in os.listdir(img_dir) if file.startswith('img')]
-        self.imgs = []
+        self.files = [file for file in os.listdir(img_dir) if file.startswith('img')]
+        # self.imgs = []
         print('Loading files')
-        for file in tqdm(files):
-            img = Image.open(os.path.join(img_dir, file))
-            if self.transform:
-                img = self.transform(img)
-            self.imgs.append(img)
+        # for file in tqdm(files):
+        #     img = Image.open(os.path.join(img_dir, file))
+        #     if self.transform:
+        #         img = self.transform(img)
+        #     self.imgs.append(img)
 
     def __len__(self):
         return len(self.imgs)
 
     def __getitem__(self, item):
-        item = self.imgs[item]
-
+        file = self.files[item]
+        item = Image.open(os.path.join(self.img_dir, file))
+        if self.transform:
+            item = self.transform(item)
         return item
 
 
