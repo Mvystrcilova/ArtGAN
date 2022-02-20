@@ -33,7 +33,7 @@ class ArtImageDataset(Dataset):
 
 
 def create_augumented_dataset(img_dir, new_data_dir, num_of_augumentations):
-    files = [file for file in os.listdir(img_dir) if file.startswith('Abstract')]
+    files = [file for file in os.listdir(img_dir) if not file.startswith('.')]
     transform_list = [transforms.RandomInvert(p=0.8), transforms.RandomSolarize(threshold=192), transforms.RandomAutocontrast(p=0.8),
                   transforms.RandomVerticalFlip(p=0.8), transforms.RandomHorizontalFlip(p=0.8),
                   transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2)]
@@ -55,5 +55,6 @@ def create_augumented_dataset(img_dir, new_data_dir, num_of_augumentations):
             augumented_img.save(os.path.join(new_data_dir, f'img_{i}_{augumentation+1}.jpg'), format='JPEG', quality=100)
 
 
-create_augumented_dataset('data/Abstract_gallery', 'data/augumented_gallery', 6)
+if __name__ == '__main__':
+    create_augumented_dataset('data/Abstract_gallery', 'data/augumented_gallery', 6)
 

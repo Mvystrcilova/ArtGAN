@@ -23,7 +23,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--dataroot', required=False, default='/Users/m_vys/PycharmProjects/ArtGAN', help='path to dataset')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=1)
 parser.add_argument('--batch_size', type=int, default=64, help='input batch size')
-parser.add_argument('--image_size', type=int, default=1024, help='the height / width of the input image to network')
+parser.add_argument('--image_size', type=int, default=64, help='the height / width of the input image to network')
 parser.add_argument('--latent_size', type=int, default=100, help='size of the latent z vector')
 parser.add_argument('--g_depth', type=int, default=64)
 parser.add_argument('--d_depth', type=int, default=64)
@@ -39,7 +39,7 @@ parser.add_argument('--manualSeed', type=int, help='manual seed')
 
 
 class Discriminator(nn.Module):
-    def __init__(self, ngpu):
+    def __init__(self, ngpu, nc, d_depth):
         super(Discriminator, self).__init__()
         self.ngpu = ngpu
         self.main = nn.Sequential(
@@ -82,7 +82,7 @@ def weights_init(m):
 
 
 class Generator(nn.Module):
-    def __init__(self, ngpu):
+    def __init__(self, ngpu, latent_size, g_depth, nc):
         super(Generator, self).__init__()
         self.ngpu = ngpu
         self.main = nn.Sequential(
@@ -121,7 +121,7 @@ if __name__ == '__main__':
     print(opt)
     cuda = torch.cuda.is_available()
     try:
-        os.makedirs(opt.outf)
+        os.makedirs(opt.output_file)
     except OSError:
         pass
 
@@ -149,13 +149,13 @@ if __name__ == '__main__':
     g_depth = int(opt.g_depth)
     d_depth = int(opt.d_depth)
 
-    netG = Generator(n_gpu).to(device)
+    netG = Generator(n_gpu, latent_size=latent_size, g_depth=g_depth, nc=nc).to(device)
     netG.apply(weights_init)
     if opt.netG != '':
         netG.load_state_dict(torch.load(opt.netG))
     print(netG)
 
-    netD = Discriminator(n_gpu).to(device)
+    netD = Discriminator(n_gpu, nc, d_depth).to(device)
     netD.apply(weights_init)
     if opt.netD != '':
         netD.load_state_dict(torch.load(opt.netD))
@@ -184,20 +184,20 @@ if __name__ == '__main__':
     Path(stats_dir).mkdir(exist_ok=True, parents=True)
     Path(config_dir).mkdir(exist_ok=True, parents=True)
 
-    d_config = dict(nc=nc, d_depth=d_depth, optimizer='adam')
-    g_config = dict(nc=nc, g_depth=g_depth, optimizer='adam')
+    d_config = dict(nc=nc, d_depth=d_depth)
+    g_config = dict(g_depth=g_depth, latent_size=latent_size,nc=nc)
     d_optim_config = dict(lr=opt.lr, betas=(opt.beta1, 0.999))
     g_optim_config = dict(lr=opt.lr, betas=(opt.beta1, 0.999))
     dataset_config = dict(batch_size=opt.batch_size, image_size=opt.image_size,
                           transforms=['resize', 'normalize', 'to_tensor'])
 
-    config_dict = dict(g_config=g_config, d_config=d_config,
+    config_dict = dict(optimizer='adam', g_config=g_config, d_config=d_config,
                   g_optim_config=g_optim_config, d_optim_config=d_optim_config,
                   dataset_config=dataset_config)
 
     with open(f'{config_dir}/config.yaml', 'w') as file:
         yaml.dump(config_dict, file)
-    for epoch in range(100, opt.epochs+100):
+    for epoch in range(opt.epochs):
         d_loss, g_loss, d_of_x, d_of_g_z1, d_of_g_z2 = [], [], [], [], []
         for i, data in enumerate(dataloader, 0):
             ############################
